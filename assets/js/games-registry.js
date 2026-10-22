@@ -37,6 +37,20 @@ const GAMES_REGISTRY = [
     tags: ["Arcade", "Retro", "Paddle"],
     stars: 32,
     featured: true
+  },
+  {
+    id: "neon-asteroid-escape_joitapaul",
+    title: "Neon Asteroid Escape",
+    category: "Arcade",
+    icon: "🚀",
+    description: "Pilot a neon starship through an asteroid field, dodge hazards, and collect energy orbs.",
+    author: "Joita Paul",
+    github: "joitapaul",
+    role: "Contributor",
+    path: "games/neon-asteroid-escape_joitapaul/index.html",
+    tags: ["Arcade", "Space", "Survival", "NSOC26"],
+    stars: 0,
+    featured: false
   }
 ];
 
@@ -47,5 +61,12 @@ const CONTRIBUTORS_REGISTRY = [
     avatarInitial: "D",
     role: "Project Admin (NSOC '26)",
     contributions: ["Quantum Memory Matrix", "Arcade Core Engine"]
+  },
+  {
+    name: "Joita Paul",
+    github: "joitapaul",
+    avatarInitial: "J",
+    role: "Contributor (NSOC '26)",
+    contributions: ["Neon Asteroid Escape"]
   }
 ];

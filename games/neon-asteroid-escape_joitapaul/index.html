@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080d1c">
+  <title>Neon Asteroid Escape | ArcadeVerse</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="game-shell">
+    <a class="back-link" href="../../index.html">← Back to ArcadeVerse</a>
+
+    <header class="game-header">
+      <p class="eyebrow">ARCADEVERSE • ARCADE</p>
+      <h1>Neon Asteroid Escape</h1>
+      <p class="subtitle">Dodge the field. Collect energy. Keep flying.</p>
+    </header>
+
+    <section class="game-panel" aria-label="Neon Asteroid Escape game">
+      <div class="hud" aria-live="polite">
+        <div class="stat">
+          <span class="stat-label">SCORE</span>
+          <strong id="score">0</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">ENERGY</span>
+          <strong id="lives" aria-label="3 lives remaining">♥ ♥ ♥</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">BEST</span>
+          <strong id="best-score">0</strong>
+        </div>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="game-canvas" width="800" height="500" aria-label="Game field. Use arrow keys or WASD to move the ship and avoid asteroids.">
+          Your browser does not support the HTML canvas element.
+        </canvas>
+        <div class="game-overlay" id="game-overlay">
+          <p class="overlay-kicker" id="overlay-kicker">READY FOR LAUNCH?</p>
+          <h2 id="overlay-title">Escape the asteroid field</h2>
+          <p id="overlay-message">Use arrow keys or WASD to fly. Collect glowing energy orbs and avoid the asteroids.</p>
+          <button class="primary-button" id="start-button" type="button">Start game</button>
+        </div>
+      </div>
+
+      <div class="game-footer">
+        <p class="keyboard-hint">Move with <kbd>↑</kbd> <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd> or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></p>
+        <button class="text-button" id="reset-best" type="button">Reset best score</button>
+      </div>
+    </section>
+
+    <div class="touch-controls" aria-label="Touch movement controls">
+      <button type="button" data-direction="up" aria-label="Move up">▲</button>
+      <div class="horizontal-controls">
+        <button type="button" data-direction="left" aria-label="Move left">◀</button>
+        <button type="button" data-direction="down" aria-label="Move down">▼</button>
+        <button type="button" data-direction="right" aria-label="Move right">▶</button>
+      </div>
+    </div>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
