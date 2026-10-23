@@ -3,6 +3,7 @@ const context = canvas.getContext("2d");
 const scoreElement = document.getElementById("score");
 const livesElement = document.getElementById("lives");
 const bestScoreElement = document.getElementById("best-score");
+const powerUpElement = document.getElementById("power-up-status");
 const overlay = document.getElementById("game-overlay");
 const overlayKicker = document.getElementById("overlay-kicker");
 const overlayTitle = document.getElementById("overlay-title");
@@ -29,16 +30,20 @@ const player = { x: width / 2, y: height - 70, radius: 15, speed: 290 };
 
 let asteroids = [];
 let energyOrbs = [];
+let powerUps = [];
 let score = 0;
 let lives = 3;
 let bestScore = readBestScore();
 let elapsed = 0;
 let asteroidTimer = 0;
 let orbTimer = 0;
+let powerUpTimer = 0;
 let lastFrame = 0;
 let animationFrame = 0;
 let gameState = "ready";
 let invulnerableTime = 0;
+let activePowerUp = null;
+let powerUpTime = 0;
 
 bestScoreElement.textContent = String(bestScore);
 drawScene();
@@ -67,9 +72,13 @@ function startGame() {
   elapsed = 0;
   asteroidTimer = 0;
   orbTimer = 0;
+  powerUpTimer = 0;
   invulnerableTime = 0;
+  activePowerUp = null;
+  powerUpTime = 0;
   asteroids = [];
   energyOrbs = [];
+  powerUps = [];
   player.x = width / 2;
   player.y = height - 70;
   Object.keys(directions).forEach((direction) => {
@@ -96,12 +105,20 @@ function updateGame(delta) {
   elapsed += delta;
   score += delta * 5;
   invulnerableTime = Math.max(0, invulnerableTime - delta);
+  if (activePowerUp) {
+    powerUpTime -= delta;
+    if (powerUpTime <= 0) {
+      activePowerUp = null;
+      powerUpTime = 0;
+    }
+  }
 
   const horizontal = Number(directions.right) - Number(directions.left);
   const vertical = Number(directions.down) - Number(directions.up);
   const magnitude = Math.hypot(horizontal, vertical) || 1;
-  player.x += (horizontal / magnitude) * player.speed * delta;
-  player.y += (vertical / magnitude) * player.speed * delta;
+  const speedMultiplier = activePowerUp === "speed" ? 1.55 : 1;
+  player.x += (horizontal / magnitude) * player.speed * speedMultiplier * delta;
+  player.y += (vertical / magnitude) * player.speed * speedMultiplier * delta;
   player.x = clamp(player.x, player.radius + 8, width - player.radius - 8);
   player.y = clamp(player.y, player.radius + 8, height - player.radius - 8);
 
@@ -118,13 +135,25 @@ function updateGame(delta) {
     spawnEnergyOrb();
   }
 
+  powerUpTimer += delta;
+  if (powerUpTimer >= 8) {
+    powerUpTimer = 0;
+    spawnPowerUp();
+  }
+
   asteroids.forEach((asteroid) => {
     asteroid.y += asteroid.speed * delta;
     asteroid.rotation += asteroid.spin * delta;
     if (invulnerableTime === 0 && distance(player, asteroid) < player.radius + asteroid.radius * 0.78) {
       asteroid.hit = true;
-      lives -= 1;
-      invulnerableTime = 1.25;
+      if (activePowerUp === "shield") {
+        activePowerUp = null;
+        powerUpTime = 0;
+        invulnerableTime = 0.65;
+      } else {
+        lives -= 1;
+        invulnerableTime = 1.25;
+      }
     }
   });
 
@@ -137,8 +166,19 @@ function updateGame(delta) {
     }
   });
 
+  powerUps.forEach((powerUp) => {
+    powerUp.y += powerUp.speed * delta;
+    powerUp.phase += delta * 4;
+    if (distance(player, powerUp) < player.radius + powerUp.radius) {
+      powerUp.collected = true;
+      activePowerUp = powerUp.type;
+      powerUpTime = powerUp.duration;
+    }
+  });
+
   asteroids = asteroids.filter((asteroid) => !asteroid.hit && asteroid.y < height + asteroid.radius);
   energyOrbs = energyOrbs.filter((orb) => !orb.collected && orb.y < height + orb.radius);
+  powerUps = powerUps.filter((powerUp) => !powerUp.collected && powerUp.y < height + powerUp.radius);
   updateHud();
 
   if (lives <= 0) endGame();
@@ -171,12 +211,27 @@ function spawnEnergyOrb() {
   });
 }
 
+function spawnPowerUp() {
+  const type = Math.random() < 0.5 ? "shield" : "speed";
+  powerUps.push({
+    x: Math.random() * (width - 60) + 30,
+    y: -20,
+    radius: 14,
+    speed: 90 + Math.min(elapsed, 70),
+    phase: 0,
+    type,
+    duration: type === "shield" ? 7 : 6,
+    collected: false
+  });
+}
+
 function drawScene() {
   context.clearRect(0, 0, width, height);
   context.fillStyle = "#080d1c";
   context.fillRect(0, 0, width, height);
   drawStars();
   energyOrbs.forEach(drawEnergyOrb);
+  powerUps.forEach(drawPowerUp);
   asteroids.forEach(drawAsteroid);
   drawPlayer();
 }
@@ -197,6 +252,15 @@ function drawPlayer() {
 
   context.save();
   context.translate(player.x, player.y);
+  if (activePowerUp === "shield") {
+    context.beginPath();
+    context.arc(0, 0, player.radius + 9, 0, Math.PI * 2);
+    context.strokeStyle = "rgba(89, 230, 255, 0.9)";
+    context.lineWidth = 3;
+    context.shadowColor = "#59e6ff";
+    context.shadowBlur = 16;
+    context.stroke();
+  }
   context.shadowColor = "#59e6ff";
   context.shadowBlur = 20;
   context.fillStyle = "#7af1ff";
@@ -254,10 +318,38 @@ function drawEnergyOrb(orb) {
   context.restore();
 }
 
+function drawPowerUp(powerUp) {
+  const color = powerUp.type === "shield" ? "#59e6ff" : "#c4b5fd";
+  const symbol = powerUp.type === "shield" ? "S" : "»";
+  const pulse = 1 + Math.sin(powerUp.phase) * 0.12;
+  context.save();
+  context.translate(powerUp.x, powerUp.y);
+  context.scale(pulse, pulse);
+  context.shadowColor = color;
+  context.shadowBlur = 18;
+  context.fillStyle = "rgba(14, 23, 43, 0.95)";
+  context.strokeStyle = color;
+  context.lineWidth = 2;
+  context.beginPath();
+  context.arc(0, 0, powerUp.radius, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+  context.shadowBlur = 0;
+  context.fillStyle = color;
+  context.font = "bold 15px system-ui, sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(symbol, 0, 1);
+  context.restore();
+}
+
 function updateHud() {
   scoreElement.textContent = String(Math.floor(score));
   livesElement.textContent = `${"♥ ".repeat(Math.max(0, lives)).trim()}${lives < 3 ? " ·".repeat(3 - lives) : ""}`;
   livesElement.setAttribute("aria-label", `${lives} ${lives === 1 ? "life" : "lives"} remaining`);
+  powerUpElement.textContent = activePowerUp
+    ? `${activePowerUp === "shield" ? "Shield" : "Speed"} ${Math.ceil(powerUpTime)}s`
+    : "—";
   if (score > bestScore) {
     bestScore = Math.floor(score);
     bestScoreElement.textContent = String(bestScore);
@@ -286,7 +378,7 @@ function clamp(value, minimum, maximum) {
 startButton.addEventListener("click", () => {
   overlayKicker.textContent = "READY FOR LAUNCH?";
   overlayTitle.textContent = "Escape the asteroid field";
-  overlayMessage.textContent = "Use arrow keys or WASD to fly. Collect glowing energy orbs and avoid the asteroids.";
+  overlayMessage.textContent = "Use arrow keys or WASD to fly. Collect energy orbs, grab shield and speed power-ups, and avoid the asteroids.";
   startButton.textContent = "Start game";
   startGame();
 });
